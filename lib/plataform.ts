@@ -27,7 +27,7 @@ class Twitter implements Platform {
 
     const response = await api.request("POST", "/tweets", {
       token: { key: this.user_key, secret: this.user_key_secret },
-      json: { text: `New post in the blog site! Show it on: ${fullLink}` },
+      json: { text: `Check the most recent post on the blog! ${fullLink}` },
       hashBody: true,
     });
 
@@ -54,7 +54,7 @@ class Telegram implements Platform {
     const bot_api_key = this.bot_api_key;
     const botURl = `bot${bot_api_key}/`;
     const endpointUrl = `${this.base_url}${botURl}sendMessage`;
-    const message = `New post in the blog site! Show it on: ${fullLink}`;
+    const message = `Check the most recent post on the blog! ${fullLink}`;
     const channel = this.channel;
     const finalUrl = `${endpointUrl}?chat_id=${channel}&text=${message}`;
 

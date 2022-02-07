@@ -22,6 +22,7 @@ The requirement for the use of this plugin are the next environment variable:
   * GITHUB_TOKEN
 * Plugin itself:
   * PUBLISH (boolean): Prevent to do the publish on the development environment
+  * On the _data/site.yml you need to put the base url of the site (ex: url: "https://example.com")
 
 This plugin are only tested in the actual version over .md kind of page
 
@@ -29,9 +30,24 @@ This plugin are only tested in the actual version over .md kind of page
 For use this plugin in your lume instance you need to import this library and use the "use" function of your site object:
 
 ```
+//_config.ts
 site
   .ignore("README.md")
   .use(publish())
   .use(publishCopy())
   ...
 ```
+
+After that on the page that you would like to see on the social networks you need to put the publish key and the platform as key with empty value like this:
+
+```
+// /posts/blablabla.md
+---
+...
+publish:
+  telegram:
+  twitter:
+---
+```
+
+When the process go through this page it'll fill the platform keys with the id of the post in the social network.
