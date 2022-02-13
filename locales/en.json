@@ -1,0 +1,3 @@
+{
+  "MESSAGE_POST": "Check the most recent post on the blog! {{- url}}"
+}

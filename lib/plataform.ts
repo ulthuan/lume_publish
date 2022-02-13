@@ -1,7 +1,24 @@
-import { oauth, Page } from "../deps.ts";
+import { i18next, oauth, Page, Site } from "../deps.ts";
+import { Options } from "./interfaces.ts";
+
+import en from "../locales/en.json" assert { type: "json" };
+import es from "../locales/es.json" assert { type: "json" };
+
+i18next
+  .init({
+    fallbackLng: "en",
+    resources: {
+      en: {
+        translation: en,
+      },
+      es: {
+        translation: es,
+      },
+    },
+  });
 
 abstract class Platform {
-  abstract post(page:Page): Promise<string | undefined>;
+  abstract post(page: Page): Promise<string | undefined>;
 }
 
 class Twitter implements Platform {
@@ -9,16 +26,19 @@ class Twitter implements Platform {
   api_key_secret: string;
   user_key: string;
   user_key_secret: string;
-  constructor() {
-    this.api_key = Deno.env.get("API_KEY") || "";
-    this.api_key_secret = Deno.env.get("API_KEY_SECRET") || "";
-    this.user_key = Deno.env.get("ACCESS_TOKEN") || "";
-    this.user_key_secret = Deno.env.get("ACCESS_TOKEN_SECRET") || "";
+  site: Site;
+  constructor(options: Options, site: Site) {
+    this.api_key = options.publish.platforms.twitter.api_key;
+    this.api_key_secret = options.publish.platforms.twitter.api_key_secret;
+    this.user_key = options.publish.platforms.twitter.access_token;
+    this.user_key_secret =
+      options.publish.platforms.twitter.access_token_secret;
+    this.site = site;
   }
   async post(page: Page): Promise<string | undefined> {
-    const baseLink = (<{[index:string]:string}>page.data.site).url
-    const pageLink = page.data.url;
-    const fullLink = `${baseLink}${pageLink}`;
+    const language = (page.data.site as { [index: string]: string }).language;
+    const t = i18next.getFixedT(language || "en");
+    const fullLink = this.site.url(<string> page.data.url, true);
     const api = new oauth.Api({
       prefix: "https://api.twitter.com/2",
       consumer: { key: this.api_key, secret: this.api_key_secret },
@@ -27,7 +47,9 @@ class Twitter implements Platform {
 
     const response = await api.request("POST", "/tweets", {
       token: { key: this.user_key, secret: this.user_key_secret },
-      json: { text: `Check the most recent post on the blog! ${fullLink}` },
+      json: {
+        text: t("MESSAGE_POST", { url: fullLink }),
+      },
       hashBody: true,
     });
 
@@ -43,18 +65,20 @@ class Telegram implements Platform {
   channel: string;
   bot_api_key: string;
   base_url = "https://api.telegram.org/";
-  constructor() {
-    this.channel = Deno.env.get("TELEGRAM_CHANNEL_ID") || "";
-    this.bot_api_key = Deno.env.get("TELEGRAM_BOT_API_KEY") || "";
+  site: Site;
+  constructor(options: Options, site: Site) {
+    this.channel = options.publish.platforms.telegram.channel_id;
+    this.bot_api_key = options.publish.platforms.telegram.bot_api_key;
+    this.site = site;
   }
   async post(page: Page): Promise<string | undefined> {
-    const baseLink = (<{[index:string]:string}>page.data.site).url
-    const pageLink = page.data.url;
-    const fullLink = `${baseLink}${pageLink}`;
+    const language = (page.data.site as { [index: string]: string }).language;
+    const t = i18next.getFixedT(language || "en");
+    const fullLink = this.site.url(<string> page.data.url, true);
     const bot_api_key = this.bot_api_key;
     const botURl = `bot${bot_api_key}/`;
     const endpointUrl = `${this.base_url}${botURl}sendMessage`;
-    const message = `Check the most recent post on the blog! ${fullLink}`;
+    const message = t("MESSAGE_POST", { url: `${fullLink}` });
     const channel = this.channel;
     const finalUrl = `${endpointUrl}?chat_id=${channel}&text=${message}`;
 
@@ -68,12 +92,12 @@ class Telegram implements Platform {
 }
 
 export class PlatformFactory {
-  static getPlatform(platform: string): Platform {
+  static getPlatform(platform: string, options: Options, site: Site): Platform {
     switch (platform) {
       case "twitter":
-        return new Twitter();
+        return new Twitter(options, site);
       case "telegram":
-        return new Telegram();
+        return new Telegram(options, site);
       default:
         throw `Not defined platform ${platform}`;
     }
