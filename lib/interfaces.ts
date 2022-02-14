@@ -1,7 +1,7 @@
 export interface Options {
   extensions: string[];
   publish: {
-    enable: boolean;
+    enable: string;
     platforms: {
       twitter: {
         api_key: string;

@@ -6,7 +6,7 @@ import { merge, Site } from "./deps.ts";
 const defaults: Options = {
   extensions: [".md"],
   publish: {
-    enable: <boolean> (Deno.env.get("PUBLISH") || false),
+    enable: Deno.env.get("PUBLISH") || "false",
     platforms: {
       twitter: {
         api_key: Deno.env.get("TWITTER_API_KEY") || "",
@@ -31,7 +31,8 @@ const defaults: Options = {
 export function publish(userOptions?: Partial<Options>) {
   const options = merge(defaults, userOptions);
   return (site: Site) => {
-    if (options.publish) {
+    const doPublish = options.publish.enable == "true";
+    if (doPublish) {
       const publish = new Publish(options, site);
       site.preprocess(options.extensions, publish.publish());
       site.process(options.extensions, publish.publishCopy());
